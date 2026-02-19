@@ -1,0 +1,44 @@
+version: '3.8'
+
+services:
+  # =========================================
+  # MySQL 服务
+  # =========================================
+  mysql:
+    image: mysql:8.0
+    container_name: dev_mysql
+    restart: always
+    # 【关键配置1】skip-name-resolve 禁止DNS解析，解决握手慢
+    command: --default-authentication-plugin=mysql_native_password --skip-name-resolve
+    environment:
+      MYSQL_ROOT_PASSWORD: admin123
+      MYSQL_DATABASE: db_practice
+      TZ: Asia/Shanghai
+    ports:
+      - "0.0.0.0:3306:3306"
+    volumes:
+      - ./mysql/data:/var/lib/mysql
+
+  # =========================================
+  # Redis 服务
+  # =========================================
+  redis:
+    image: redis:7.0
+    container_name: dev_redis
+    restart: always
+    command: redis-server --appendonly yes --requirepass "123456"
+    ports:
+      - "0.0.0.0:6379:6379"
+    volumes:
+      - ./redis/data:/data
+    environment:
+      TZ: Asia/Shanghai
+
+# =========================================
+# 【关键配置2】网络 MTU 补丁 (解决 VPN/TUN 丢包问题)
+# =========================================
+networks:
+  default:
+    driver: bridge
+    driver_opts:
+      com.docker.network.driver.mtu: 1350  # 将网络包大小限制在 1350 (小于 VPN 的 1400)
