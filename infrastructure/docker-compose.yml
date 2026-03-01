@@ -1,44 +1,34 @@
 version: '3.8'
-
 services:
-  # =========================================
-  # MySQL 服务
-  # =========================================
-  mysql:
+  # 练习用MySQL
+  mysql-practice:
     image: mysql:8.0
-    container_name: dev_mysql
-    restart: always
-    # 【关键配置1】skip-name-resolve 禁止DNS解析，解决握手慢
-    command: --default-authentication-plugin=mysql_native_password --skip-name-resolve
-    environment:
-      MYSQL_ROOT_PASSWORD: admin123
-      MYSQL_DATABASE: db_practice
-      TZ: Asia/Shanghai
+    container_name: mysql-practice
     ports:
-      - "0.0.0.0:3306:3306"
-    volumes:
-      - ./mysql/data:/var/lib/mysql
-
-  # =========================================
-  # Redis 服务
-  # =========================================
-  redis:
-    image: redis:7.0
-    container_name: dev_redis
-    restart: always
-    command: redis-server --appendonly yes --requirepass "123456"
-    ports:
-      - "0.0.0.0:6379:6379"
-    volumes:
-      - ./redis/data:/data
+      - "3307:3306"  # 用3307端口，和上线项目的3306区分
     environment:
-      TZ: Asia/Shanghai
+      MYSQL_ROOT_PASSWORD: 123456  # 练习用密码，简单点没关系
+      MYSQL_CHARACTER_SET_SERVER: utf8mb4
+      MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    volumes:
+      - ./mysql_data:/var/lib/mysql  # 挂载到当前目录的mysql_data
+    restart: always
+    networks:
+      - practice-network
 
-# =========================================
-# 【关键配置2】网络 MTU 补丁 (解决 VPN/TUN 丢包问题)
-# =========================================
+  # 练习用Redis
+  redis-practice:
+    image: redis:latest
+    container_name: redis-practice
+    ports:
+      - "6380:6379"  # 用6380端口，和上线项目的6379区分
+    volumes:
+      - ./redis_data:/data
+    command: redis-server --appendonly yes  # 开启持久化
+    restart: always
+    networks:
+      - practice-network
+
 networks:
-  default:
+  practice-network:
     driver: bridge
-    driver_opts:
-      com.docker.network.driver.mtu: 1350  # 将网络包大小限制在 1350 (小于 VPN 的 1400)
