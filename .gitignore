@@ -1,0 +1,21 @@
+infrastructure/mysql_data/
+infrastructure/redis_data/
+
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+# 编译后的临时文件
+__debug_bin
+# IDE 配置文件（根据你使用的编辑器添加）
+.idea/
+.vscode/
+*.swp
+*.swo
+# Docker 临时文件
+.dockerignore.bak
+# 日志文件
+*.log
+# 本地环境配置文件（比如你自己的 .env 本地配置，不要提交）
+.env
