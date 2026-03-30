@@ -38,6 +38,7 @@ func concurrentWriteWithoutMutex() {
 	fmt.Println(len(s))
 }
 
+// 并发写切片，加锁
 func concurrentWriteWithMutex() {
 	var s []int
 	var wg sync.WaitGroup
@@ -54,4 +55,9 @@ func concurrentWriteWithMutex() {
 	}
 	wg.Wait() //记得等待协程结束
 	fmt.Println(len(s))
+}
+
+// 并发写切片，使用channel
+func concurrentWriteWithChannel() {
+
 }

@@ -1,5 +1,6 @@
 infrastructure/mysql_data/
 infrastructure/redis_data/
+infrastructure/rabbitmq_data/
 
 *.exe
 *.exe~
