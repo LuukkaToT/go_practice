@@ -1,33 +1,97 @@
-version: '3.8'
+# 本机练习：deploy.cpus 按容器限核，叠加 ≈ MySQL2 + Redis1 + Rabbit0.5（核数上限之和）。
+# 若需省内存：MySQL 可改为 6G + buffer pool 3G，Redis 改为 1G + maxmemory 768mb。
+
 services:
-  # 练习用MySQL
   mysql-practice:
     image: mysql:8.0
     container_name: mysql-practice
     ports:
-      - "3307:3306"  # 用3307端口，和上线项目的3306区分
+      - "3307:3306"
     environment:
-      MYSQL_ROOT_PASSWORD: 123456  # 练习用密码，简单点没关系
+      MYSQL_ROOT_PASSWORD: "123456"
+      MYSQL_DATABASE: mysql-practice
       MYSQL_CHARACTER_SET_SERVER: utf8mb4
       MYSQL_COLLATION_SERVER: utf8mb4_unicode_ci
+    command: >
+      --innodb-buffer-pool-size=5G
+      --max-connections=600
     volumes:
-      - ./mysql_data:/var/lib/mysql  # 挂载到当前目录的mysql_data
-    restart: always
+      - ./mysql_data:/var/lib/mysql
+    restart: unless-stopped
     networks:
       - practice-network
+    deploy:
+      resources:
+        limits:
+          cpus: "2.0"
+          memory: 10G
+        reservations:
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-uroot", "-p123456"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
 
-  # 练习用Redis
   redis-practice:
-    image: redis:latest
+    image: redis:7-alpine
     container_name: redis-practice
     ports:
-      - "6380:6379"  # 用6380端口，和上线项目的6379区分
+      - "6380:6379"
     volumes:
       - ./redis_data:/data
-    command: redis-server --appendonly yes  # 开启持久化
-    restart: always
+    # appendonly 会增加盘写入；纯练习可考虑去掉 --appendonly yes，或把卷换成 tmpfs
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 2gb
+      --maxmemory-policy allkeys-lru
+    restart: unless-stopped
     networks:
       - practice-network
+    deploy:
+      resources:
+        limits:
+          cpus: "1.0"
+          memory: 3G
+        reservations:
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  # AMQP 与管理台；宿主机 5673/15673 避免与本机已装的 5672/15672 冲突。
+  # 连接串示例：amqp://practice:practice@127.0.0.1:5673/
+  rabbit-practice:
+    image: rabbitmq:3.13-management-alpine
+    container_name: rabbit-practice
+    ports:
+      - "5673:5672"
+      - "15673:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: practice
+      RABBITMQ_DEFAULT_PASS: practice
+    volumes:
+      - ./rabbitmq_data:/var/lib/rabbitmq
+    restart: unless-stopped
+    networks:
+      - practice-network
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: 1G
+        reservations:
+          memory: 128M
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 15s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
 networks:
   practice-network:
